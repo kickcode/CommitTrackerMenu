@@ -30,41 +30,46 @@ class AppDelegate
   end
 
   def checkForNewEvents
-    @http_state.title = "Working..."
-    @github.events do |events|
-      @http_state.title = "Processing..."
-      unless events.empty?
-        @events.each { |item| @status_menu.removeItem(item) }
-        @events = []
-        @urls = {}
+    begin
+      @http_state.title = "Working..."
+      @github.events do |events|
+        @http_state.title = "Processing..."
+        unless events.empty?
+          @events.each { |item| @status_menu.removeItem(item) }
+          @events = []
+          @urls = {}
 
-        counter = 0
-        events.reverse.each do |event|
-          next unless event["type"] == "PushEvent"
-          next if event["payload"].nil? || event["payload"]["commits"].nil?
+          counter = 0
+          events.reverse.each do |event|
+            next unless event["type"] == "PushEvent"
+            next if event["payload"].nil? || event["payload"]["commits"].nil?
 
-          commits = event["payload"]["commits"].select { |c| c["distinct"] }
+            commits = event["payload"]["commits"].select { |c| c["distinct"] }
 
-          next if commits.length == 0
+            next if commits.length == 0
 
-          actor = event['actor']['login']
-          repo = event['repo']['name']
+            actor = event['actor']['login']
+            repo = event['repo']['name']
 
-          commits.each do |commit|
-            message = commit['message'].split("\n").first
-            message = "#{message[0...30]}..." if message.length > 35
-            @urls[counter] = commit['url'].gsub("api.", "").gsub("/repos", "").gsub("/commits", "/commit")
-            item = self.createMenuItem("[#{actor}]: #{repo} - #{message}", 'pressEvent:')
-            item.tag = counter
-            @events << item
-            @status_menu.insertItem(item, atIndex: 1)
-            counter += 1
+            commits.each do |commit|
+              message = commit['message'].split("\n").first
+              message = "#{message[0...30]}..." if message.length > 35
+              @urls[counter] = commit['url'].gsub("api.", "").gsub("/repos", "").gsub("/commits", "/commit")
+              item = self.createMenuItem("[#{actor}]: #{repo} - #{message}", 'pressEvent:')
+              item.tag = counter
+              @events << item
+              @status_menu.insertItem(item, atIndex: 1)
+              counter += 1
+            end
           end
         end
+        @http_state.title = "Ready"
       end
-      @http_state.title = "Ready"
+    rescue
+      @http_state.title = "Error, retrying again shortly"
+    ensure
+      NSTimer.scheduledTimerWithTimeInterval(CONFIG[:timer], target: self, selector: 'checkForNewEvents', userInfo: nil, repeats: false)
     end
-    NSTimer.scheduledTimerWithTimeInterval(CONFIG[:timer], target: self, selector: 'checkForNewEvents', userInfo: nil, repeats: false)
   end
 
   def pressEvent(item)
