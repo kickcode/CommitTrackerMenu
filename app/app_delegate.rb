@@ -6,6 +6,7 @@ class AppDelegate
     @app_name = NSBundle.mainBundle.infoDictionary['CFBundleDisplayName']
 
     @status_menu = NSMenu.new
+    @status_menu.delegate = self
 
     @status_item = NSStatusBar.systemStatusBar.statusItemWithLength(NSVariableStatusItemLength).init
     @status_item.setMenu(@status_menu)
@@ -19,7 +20,7 @@ class AppDelegate
     @status_menu.addItem createMenuItem("About #{@app_name}", 'orderFrontStandardAboutPanel:')
     @status_menu.addItem createMenuItem("Quit", 'terminate:')
 
-    @events = []
+    @unseen = 0
     @github = GitHub.new(CONFIG[:github_token]) do
       self.checkForNewEvents
     end
@@ -35,9 +36,11 @@ class AppDelegate
       @github.events do |events|
         @http_state.title = "Processing..."
         unless events.empty?
-          @events.each { |item| @status_menu.removeItem(item) }
+          @events.each { |item| @status_menu.removeItem(item) } unless @events.nil?
           @events = []
           @urls = {}
+          @last_commits = @commits || []
+          @commits = []
 
           counter = 0
           events.reverse.each do |event|
@@ -60,8 +63,12 @@ class AppDelegate
               @events << item
               @status_menu.insertItem(item, atIndex: 1)
               counter += 1
+              @commits << commit['sha']
             end
           end
+
+          @unseen += (@commits - @last_commits).length
+          self.showUnseenCommits
         end
         @http_state.title = "Ready"
       end
@@ -74,5 +81,14 @@ class AppDelegate
 
   def pressEvent(item)
     NSWorkspace.sharedWorkspace.openURL(NSURL.URLWithString(@urls[item.tag]))
+  end
+
+  def menuWillOpen(menu)
+    @unseen = 0
+    self.showUnseenCommits
+  end
+
+  def showUnseenCommits
+    @status_item.setTitle("#{@unseen.zero? ? 'No' : @unseen} new #{@unseen == 1 ? 'commit' : 'commits'}")
   end
 end
