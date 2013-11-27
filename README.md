@@ -4,6 +4,8 @@ A RubyMotion OS X app that integrates with GitHub to show recent commit events f
 
 For the accompanying tutorial, see: http://kickcode.com/blog/2013/11/22/talking-to-an-api-from-your-rubymotion-app.html
 
+For the tutorial article on the user notifications, see: http://kickcode.com/blog/2013/11/27/user-notifications-in-your-os-x-app.html
+
 ## Requirements
 
 * RubyMotion 2.0+
