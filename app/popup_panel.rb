@@ -1,6 +1,6 @@
 class PopupPanel < NSPanel
   POPUP_WIDTH = 400
-  POPUP_HEIGHT = 250
+  POPUP_HEIGHT = 280
 
   def initPopup
     self.initWithContentRect([[0, 0], [POPUP_WIDTH, POPUP_HEIGHT]],
