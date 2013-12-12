@@ -1,24 +1,13 @@
 class AppDelegate
+  SCROLL_VIEW_INSET = 3
   CONFIG = YAML::load(NSMutableData.dataWithContentsOfURL(NSBundle.mainBundle.URLForResource("config", withExtension: "yml")).to_s)
   attr_accessor :status_menu
 
   def applicationDidFinishLaunching(notification)
     @app_name = NSBundle.mainBundle.infoDictionary['CFBundleDisplayName']
 
-    @status_menu = NSMenu.new
-    @status_menu.delegate = self
-
-    @status_item = NSStatusBar.systemStatusBar.statusItemWithLength(NSVariableStatusItemLength).init
-    @status_item.setMenu(@status_menu)
-    @status_item.setHighlightMode(true)
-    @status_item.setTitle(@app_name)
-
-    @http_state = createMenuItem("Loading...", '')
-    @http_state.enabled = false
-    @status_menu.addItem @http_state
-
-    @status_menu.addItem createMenuItem("About #{@app_name}", 'orderFrontStandardAboutPanel:')
-    @status_menu.addItem createMenuItem("Quit", 'terminate:')
+    buildMenu
+    buildWindow
 
     @unseen = 0
     @github = GitHub.new(CONFIG[:github_token]) do
@@ -28,8 +17,46 @@ class AppDelegate
     NSUserNotificationCenter.defaultUserNotificationCenter.setDelegate(self)
   end
 
+  def buildMenu
+    @status_menu = NSMenu.new
+    @status_menu.delegate = self
+
+    @status_item = NSStatusBar.systemStatusBar.statusItemWithLength(NSVariableStatusItemLength).init
+    @status_item.setHighlightMode(true)
+    @status_item.setTitle(@app_name)
+    @status_item.setTarget(self)
+    @status_item.setAction('showHide:')
+
+    @http_state = createMenuItem("Loading...", '')
+    @http_state.enabled = false
+    @status_menu.addItem @http_state
+
+    @status_menu.addItem createMenuItem("About #{@app_name}", 'orderFrontStandardAboutPanel:')
+    @status_menu.addItem createMenuItem("Quit", 'terminate:')
+  end
+
   def createMenuItem(name, action)
     NSMenuItem.alloc.initWithTitle(name, action: action, keyEquivalent: '')
+  end
+
+  def showHide(sender)
+    @unseen = 0
+    self.showUnseenCommits
+    @window.showHide(sender)
+  end
+
+  def buildWindow
+    @window = PopupPanel.alloc.initPopup
+
+    scroll_view = NSScrollView.alloc.initWithFrame(NSInsetRect(@window.contentView.frame, PopupBackground::LINE_THICKNESS + SCROLL_VIEW_INSET, PopupBackground::ARROW_HEIGHT + SCROLL_VIEW_INSET))
+    scroll_view.autoresizingMask = NSViewMinXMargin|NSViewMinYMargin|NSViewWidthSizable|NSViewHeightSizable
+    scroll_view.hasVerticalScroller = true
+    @window.contentView.addSubview(scroll_view)
+
+    @collection_view = NSCollectionView.alloc.initWithFrame(scroll_view.frame)
+    @collection_view.setItemPrototype(CommitPrototype.new)
+
+    scroll_view.documentView = @collection_view
   end
 
   def checkForNewEvents
@@ -38,13 +65,10 @@ class AppDelegate
       @github.events do |events|
         @http_state.title = "Processing..."
         unless events.empty?
-          @events.each { |item| @status_menu.removeItem(item) } unless @events.nil?
-          @events = []
-          @urls = {}
           @last_commits = @commits || []
           @commits = []
+          @data = []
 
-          counter = 0
           events.reverse.each do |event|
             next unless event["type"] == "PushEvent"
             next if event["payload"].nil? || event["payload"]["commits"].nil?
@@ -55,17 +79,13 @@ class AppDelegate
 
             actor = event['actor']['login']
             repo = event['repo']['name']
+            avatar = event['actor']['avatar_url']
 
             commits.each do |commit|
-              message = commit['message'].split("\n").first
-              message = "#{message[0...30]}..." if message.length > 35
-              @urls[counter] = commit['url'].gsub("api.", "").gsub("/repos", "").gsub("/commits", "/commit")
-              item = self.createMenuItem("[#{actor}]: #{repo} - #{message}", 'pressEvent:')
-              item.tag = counter
-              @events << item
-              @status_menu.insertItem(item, atIndex: 1)
-              counter += 1
+              message = commit['message'].split("\n").join(" ")
+              url = commit['url'].gsub("api.", "").gsub("/repos", "").gsub("/commits", "/commit")
               @commits << commit['sha']
+              @data << Commit.new(actor, repo, message, avatar, url)
             end
           end
 
@@ -75,21 +95,13 @@ class AppDelegate
           self.showNotification(new_commits)
         end
         @http_state.title = "Ready"
+        @collection_view.setContent(@data)
       end
     rescue
       @http_state.title = "Error, retrying again shortly"
     ensure
       NSTimer.scheduledTimerWithTimeInterval(CONFIG[:timer], target: self, selector: 'checkForNewEvents', userInfo: nil, repeats: false)
     end
-  end
-
-  def pressEvent(item)
-    NSWorkspace.sharedWorkspace.openURL(NSURL.URLWithString(@urls[item.tag]))
-  end
-
-  def menuWillOpen(menu)
-    @unseen = 0
-    self.showUnseenCommits
   end
 
   def showUnseenCommits
