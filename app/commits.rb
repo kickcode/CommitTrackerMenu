@@ -32,7 +32,6 @@ class CommitView < NSView
 
   def mouseDown(event)
     NSWorkspace.sharedWorkspace.openURL(NSURL.URLWithString(@object.url))
-    App.shared.delegate.showHide(nil)
   end
 end
 

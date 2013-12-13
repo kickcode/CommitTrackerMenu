@@ -52,7 +52,6 @@ class AppDelegate
     @window = PopupPanel.alloc.initPopup
 
     scroll_view = NSScrollView.alloc.initWithFrame(NSInsetRect(@window.contentView.frame, PopupBackground::LINE_THICKNESS + SCROLL_VIEW_INSET, PopupBackground::ARROW_HEIGHT + SCROLL_VIEW_INSET + (BUTTON_HEIGHT / 2)))
-    scroll_view.autoresizingMask = NSViewMinXMargin|NSViewMinYMargin|NSViewWidthSizable|NSViewHeightSizable
     scroll_view.hasVerticalScroller = true
     @window.contentView.addSubview(scroll_view)
 

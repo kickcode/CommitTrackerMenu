@@ -1,4 +1,4 @@
-# Drawing code for the popup panel background ported from the excellent Obj-C popup demo code
+# Drawing code for the popup panel background ported from this excellent Obj-C popup demo code
 # https://github.com/shpakovski/Popup / http://blog.shpakovski.com/2011/07/cocoa-popup-window-in-status-bar.html
 class PopupBackground < NSView
   ARROW_HEIGHT = 12
