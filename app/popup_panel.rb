@@ -19,9 +19,8 @@ class PopupPanel < NSPanel
   end
 
   def showHide(sender)
-    if @showing
+    if self.isVisible
       self.orderOut(false)
-      @showing = false
     else
       event_frame = NSApp.currentEvent.window.frame
       window_frame = self.frame
@@ -32,7 +31,6 @@ class PopupPanel < NSPanel
 
       NSApp.activateIgnoringOtherApps(true)
       self.makeKeyAndOrderFront(self)
-      @showing = true
     end
   end
 
@@ -40,20 +38,7 @@ class PopupPanel < NSPanel
     true
   end
 
-  def canBecomeMainWindow
-    true
-  end
-
-  def windowShouldClose(sender)
-    showHide(sender)
-    false
-  end
-
   def windowDidResignKey(sender)
-    @showing = false
-  end
-
-  def windowDidResignMain(sender)
-    @showing = false
+    self.orderOut(false)
   end
 end
