@@ -83,7 +83,7 @@ class AppDelegate
           @commits = []
           @data = []
 
-          events.reverse.each do |event|
+          events.each do |event|
             next unless event["type"] == "PushEvent"
             next if event["payload"].nil? || event["payload"]["commits"].nil?
 
