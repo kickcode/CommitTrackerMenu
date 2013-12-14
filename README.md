@@ -6,6 +6,8 @@ For the accompanying tutorial, see: http://kickcode.com/blog/2013/11/22/talking-
 
 For the tutorial article on the user notifications, see: http://kickcode.com/blog/2013/11/27/user-notifications-in-your-os-x-app.html
 
+For the tutorial article on the custom UI, see: http://kickcode.com/blog/2013/12/14/custom-ui-popup-panel-for-mac-os-x-status-bar-app-with-rubymotion.html
+
 ![CommitTrackerMenu](https://raw.github.com/kickcode/CommitTrackerMenu/master/commit_tracker_menu.gif)
 
 ## Requirements
